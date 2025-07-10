@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Groq Chatbot</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    #chat-container {
+      background: #fff;
+      border-radius: 10px;
+      width: 400px;
+      height: 600px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    #chat-log {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .user {
+      text-align: right;
+      color: #1f78d1;
+    }
+    .bot {
+      text-align: left;
+      color: #333;
+    }
+    #chat-input {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    #user-input {
+      flex: 1;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+    }
+    #send-btn {
+      background: #1f78d1;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+    #send-btn:hover {
+      background: #1666aa;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="chat-log"></div>
+    <div id="chat-input">
+      <input type="text" id="user-input" placeholder="Type your message..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatLog = document.getElementById('chat-log');
+    const userInput = document.getElementById('user-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    // Replace with your actual Groq API key
+    const API_KEY = "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";
+    const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+    async function sendMessage() {
+      const message = userInput.value.trim();
+      if (!message) return;
+
+      appendMessage("You", message, "user");
+      userInput.value = "";
+
+      appendMessage("Bot", "Thinking...", "bot");
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "llama3-70b-8192",
+            messages: [
+              { role: "system", content: "You are a helpful assistant." },
+              { role: "user", content: message }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        const botReply = data.choices[0].message.content;
+
+        updateLastBotMessage(botReply);
+      } catch (error) {
+        console.error(error);
+        updateLastBotMessage("❌ Error: Could not reach API");
+      }
+    }
+
+    function appendMessage(sender, text, className) {
+      const messageElem = document.createElement("div");
+      messageElem.classList.add("message", className);
+      messageElem.innerHTML = `<strong>${sender}:</strong> ${text}`;
+      chatLog.appendChild(messageElem);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    function updateLastBotMessage(newText) {
+      const botMessages = document.querySelectorAll(".bot");
+      if (botMessages.length) {
+        botMessages[botMessages.length - 1].innerHTML = `<strong>Bot:</strong> ${newText}`;
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    userInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+</body>
+</html>
